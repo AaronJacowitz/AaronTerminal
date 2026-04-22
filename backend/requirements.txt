@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+yfinance
+polygon-api-client
+feedparser
+numpy
+scipy
+pandas
+python-dotenv
+httpx
+aiohttp
