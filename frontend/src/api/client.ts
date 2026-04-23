@@ -36,3 +36,9 @@ export const fetchPriceAt = (ticker: string, date: string, time?: string) =>
 
 export const calculatePnL = (payload: object) =>
   api.post('/pnl/calculate', payload).then(r => r.data)
+
+export const fetchListings = (params: Record<string, string | number | undefined>) =>
+  api.get('/realestate/listings', { params }).then(r => r.data)
+
+export const fetchRentEstimate = (params: Record<string, string | number | undefined>) =>
+  api.get('/realestate/rent-estimate', { params }).then(r => r.data)

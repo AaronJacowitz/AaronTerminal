@@ -86,3 +86,8 @@ input  { font-family: inherit; }
 
 .itm { color: var(--green); }
 .otm { color: var(--text-dim); }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}

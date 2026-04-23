@@ -1,19 +1,29 @@
 # Aaron Terminal
 
-A personal web-based trading terminal with real-time charts, options chain analysis, Greek history, P&L modeling, and a live watchlist.
+A personal web-based trading and real estate investment terminal with real-time charts, options analysis, Greek history, P&L modeling, watchlist tracking, and property investment metrics.
 
 ![Aaron Terminal](https://img.shields.io/badge/stack-FastAPI%20%2B%20React-blue)
 
 ## Features
 
+### Stocks & Options Terminal
 - **Price Charts** — Candlestick charts with volume, 1D/1W/1M/1Y/5Y/MAX ranges, and auto-selected candle granularity
 - **Stock Metrics** — Market cap, P/E, PEG, earnings date, 52-week range, dividend yield, short ratio
 - **Options Chain** — Full call/put chain with bid/ask, IV, and all five Greeks per strike
 - **P&L Modeler** — Black-Scholes expiration P&L curve with breakeven, max loss, and max profit
 - **Greek History** — Delta, gamma, theta, vega, rho, and IV charted over 1W/1M/1Y using rolling realized vol
-- **News** — Ticker-specific news feed with keyword search
+- **News** — Ticker-specific headlines from Yahoo Finance, WSJ, Bloomberg, and CNBC — sorted by most recent
+- **News Alerts** — Bell icon in the top bar polls all watchlist tickers every 5 minutes and notifies you of new headlines with toast pop-ups
 - **Watchlist** — Track stocks and options with live daily return (P&L vs. prior close), refreshed every 15s
 - **Multi-panel layout** — Add and arrange multiple panels side by side
+
+### Real Estate Terminal
+- **Property Search** — Search active listings by city/state, zip code, or address (powered by Rentcast)
+- **Investment Metrics** — Estimated monthly rent, gross yield, and monthly cash flow per property
+- **Full Cost Breakdown** — Est. monthly costs include mortgage, property tax (1.1%/yr), insurance (0.5%/yr), maintenance (1%/yr), CapEx reserve (0.5%/yr), property management (8% of rent), and vacancy (5% of rent)
+- **Adjustable Mortgage Assumptions** — Edit down payment % and interest rate per card; cash flow updates live
+- **Fuzzy City Search** — Autocomplete with 200+ US cities and common abbreviations (nyc, la, sf, dc, etc.)
+- **Sort & Filter** — Sort by price, $/sqft, sq ft, days listed, cash flow, or gross yield; toggle high/low
 
 ## Tech Stack
 
@@ -21,7 +31,9 @@ A personal web-based trading terminal with real-time charts, options chain analy
 |-------|------|
 | Frontend | React 19, TypeScript, Vite, Recharts, lightweight-charts (TradingView) |
 | Backend | Python, FastAPI, yfinance, scipy (Black-Scholes) |
-| Data | yfinance (15-min delayed) + Polygon.io (optional real-time) |
+| Data — Stocks | yfinance (15-min delayed) + Polygon.io (optional real-time) |
+| Data — News | Yahoo Finance RSS, WSJ RSS, Bloomberg RSS, CNBC RSS |
+| Data — Real Estate | Rentcast API (listings + rent estimates) |
 
 ## Getting Started
 
@@ -30,11 +42,12 @@ A personal web-based trading terminal with real-time charts, options chain analy
 - Python 3.10+
 - Node.js 18+
 - A free [Polygon.io](https://polygon.io) API key (optional — used for real-time quotes)
+- A [Rentcast](https://rentcast.io) API key (free tier: 50 requests/month)
 
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/your-username/AaronTerminal.git
+git clone https://github.com/AaronJacowitz/AaronTerminal.git
 cd AaronTerminal
 ```
 
@@ -46,7 +59,7 @@ python3 -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env
-# Edit .env and add your Polygon API key (optional)
+# Edit .env and add your API keys
 ```
 
 ### 3. Set up the frontend
@@ -77,6 +90,8 @@ Copy `backend/.env.example` to `backend/.env` and fill in your values:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `POLYGON_API_KEY` | Optional | [Polygon.io](https://polygon.io) key for real-time quote data. Without it, falls back to yfinance (15-min delayed). |
+| `RENTCAST_API_KEY` | Optional | [Rentcast](https://rentcast.io) key for property listings and rent estimates. |
+| `RENTCAST_MOCK` | Optional | Set to `true` to use mock listing data (protects your 50 req/month free quota). |
 
 ## Project Structure
 
@@ -91,10 +106,20 @@ AaronTerminal/
 │       ├── candles.py        # OHLCV candlestick data
 │       ├── options.py        # Options chain + Greek history
 │       ├── pnl.py            # Black-Scholes P&L modeling
-│       └── news.py           # Ticker news feed
+│       ├── news.py           # Multi-source news feed (Yahoo, WSJ, Bloomberg, CNBC)
+│       └── realestate.py     # Rentcast listings + rent estimates
 ├── frontend/
 │   ├── src/
-│   │   ├── components/       # React UI components
+│   │   ├── components/
+│   │   │   ├── realestate/   # Real estate terminal components
+│   │   │   │   ├── RealEstateApp.tsx
+│   │   │   │   ├── PropertyCard.tsx
+│   │   │   │   └── cities.ts
+│   │   │   ├── NewsNotificationBell.tsx
+│   │   │   ├── NewsToasts.tsx
+│   │   │   └── ...           # Stocks terminal components
+│   │   ├── hooks/
+│   │   │   └── useNewsNotifications.ts
 │   │   ├── context/          # Watchlist global state
 │   │   ├── api/              # API client (axios)
 │   │   └── App.tsx
@@ -105,10 +130,12 @@ AaronTerminal/
 
 ## Data Sources & Accuracy
 
-- Prices are **15-minute delayed** via yfinance by default
+- Stock prices are **15-minute delayed** via yfinance by default
 - With a Polygon.io key, quotes update in near real-time
 - Options Greeks are computed via Black-Scholes using yfinance IV data
 - Greek history uses a 20-day rolling realized volatility window as the IV proxy
+- News is fetched from public RSS feeds; WSJ and Bloomberg articles may require a subscription to read in full
+- Real estate listings and rent estimates are provided by Rentcast
 
 ## License
 

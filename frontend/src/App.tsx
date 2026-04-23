@@ -5,8 +5,13 @@ import CandleChart from './components/CandleChart'
 import OptionsView from './components/OptionsView'
 import NewsPanel from './components/NewsPanel'
 import Watchlist from './components/Watchlist'
+import LandingPage from './components/LandingPage'
+import RealEstateApp from './components/realestate/RealEstateApp'
+import NewsNotificationBell from './components/NewsNotificationBell'
+import NewsToasts from './components/NewsToasts'
+import { useNewsNotifications } from './hooks/useNewsNotifications'
 import { WatchlistProvider } from './context/WatchlistContext'
-import { Activity, Plus, X, Search } from 'lucide-react'
+import { Activity, Plus, X, Search, Home } from 'lucide-react'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -149,8 +154,9 @@ function Panel({
 
 // --- Workspace ---
 
-function Workspace() {
+function Workspace({ onSwitch }: { onSwitch: (mode: AppMode) => void }) {
   const [panels, setPanels] = useState<PanelState[]>([makePanel('SPY', 'chart')])
+  const { notifications, toasts, unread, dismissToast, markAllRead, clearAll } = useNewsNotifications()
 
   const addPanel = () => {
     setPanels(prev => [...prev, makePanel('SPY', 'chart')])
@@ -176,11 +182,53 @@ function Workspace() {
         background: 'var(--bg3)', borderBottom: '1px solid var(--border)',
         padding: '5px 12px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--green)', fontWeight: 700, fontSize: 12, letterSpacing: '0.1em' }}>
-          <Activity size={13} />
-          AARON TERMINAL
-        </div>
+        {/* Aaron Terminal — click to go home */}
+        <button
+          onClick={() => onSwitch('landing')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: 'var(--green)', fontWeight: 700, fontSize: 12, letterSpacing: '0.1em',
+            fontFamily: 'inherit', padding: 0, transition: 'opacity 0.15s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
+          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+        >
+          <Activity size={13} /> AARON TERMINAL
+        </button>
+
         <div style={{ width: 1, height: 16, background: 'var(--border)' }} />
+
+        {/* Mode switcher */}
+        <div style={{ display: 'flex', background: 'var(--bg)', borderRadius: 4, padding: 2, gap: 2, border: '1px solid var(--border)' }}>
+          <button
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              background: 'rgba(0,212,170,0.15)', border: '1px solid rgba(0,212,170,0.35)',
+              color: 'var(--green)', borderRadius: 3, padding: '3px 10px',
+              fontSize: 10, fontFamily: 'inherit', fontWeight: 600, letterSpacing: '0.06em', cursor: 'default',
+            }}
+          >
+            <Activity size={9} /> STOCKS
+          </button>
+          <button
+            onClick={() => onSwitch('realestate')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              background: 'none', border: '1px solid transparent',
+              color: 'var(--text-dim)', borderRadius: 3, padding: '3px 10px',
+              fontSize: 10, fontFamily: 'inherit', fontWeight: 600, letterSpacing: '0.06em', cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--blue)'; e.currentTarget.style.borderColor = 'rgba(77,166,255,0.3)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.borderColor = 'transparent' }}
+          >
+            <Home size={9} /> REAL ESTATE
+          </button>
+        </div>
+
+        <div style={{ width: 1, height: 16, background: 'var(--border)' }} />
+
         <button
           onClick={addPanel}
           style={{
@@ -188,16 +236,24 @@ function Workspace() {
             background: 'rgba(0,212,170,0.1)', border: '1px solid rgba(0,212,170,0.3)',
             color: 'var(--green)', borderRadius: 3, padding: '3px 10px',
             fontSize: 10, fontFamily: 'inherit', fontWeight: 600, letterSpacing: '0.06em',
-            transition: 'all 0.15s',
+            transition: 'all 0.15s', cursor: 'pointer',
           }}
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,212,170,0.2)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'rgba(0,212,170,0.1)')}
         >
           <Plus size={11} /> ADD PANEL
         </button>
-        <div style={{ marginLeft: 'auto', fontSize: 9, color: 'var(--text-mute)' }}>
+
+        <NewsNotificationBell
+          notifications={notifications}
+          unread={unread}
+          onOpen={markAllRead}
+          onClear={clearAll}
+        />
+
+        <span style={{ marginLeft: 'auto', fontSize: 9, color: 'var(--text-mute)' }}>
           {count} PANEL{count !== 1 ? 'S' : ''} · 15-MIN DELAYED · YFINANCE + POLYGON
-        </div>
+        </span>
       </div>
 
       {/* Panel grid */}
@@ -218,15 +274,29 @@ function Workspace() {
           />
         ))}
       </div>
+
+      <NewsToasts toasts={toasts} onDismiss={dismissToast} />
     </div>
   )
 }
 
+type AppMode = 'landing' | 'stocks' | 'realestate'
+
 export default function App() {
+  const [mode, setMode] = useState<AppMode>('landing')
+
   return (
     <QueryClientProvider client={queryClient}>
       <WatchlistProvider>
-        <Workspace />
+        {mode === 'landing' && (
+          <LandingPage onSelect={m => setMode(m)} />
+        )}
+        {mode === 'stocks' && (
+          <Workspace onSwitch={setMode} />
+        )}
+        {mode === 'realestate' && (
+          <RealEstateApp onSwitch={setMode} />
+        )}
       </WatchlistProvider>
     </QueryClientProvider>
   )

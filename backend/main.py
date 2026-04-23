@@ -5,7 +5,7 @@ import os
 
 load_dotenv()
 
-from routers import quotes, candles, options, news, pnl
+from routers import quotes, candles, options, news, pnl, realestate
 
 app = FastAPI(title="AaronTerminal API", version="1.0.0")
 
@@ -21,6 +21,7 @@ app.include_router(candles.router)
 app.include_router(options.router)
 app.include_router(news.router)
 app.include_router(pnl.router)
+app.include_router(realestate.router)
 
 
 @app.get("/")
