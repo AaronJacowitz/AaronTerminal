@@ -7,7 +7,6 @@ import OptionsView from './components/OptionsView'
 import NewsPanel from './components/NewsPanel'
 import Watchlist from './components/Watchlist'
 import LandingPage from './components/LandingPage'
-import RealEstateApp from './components/realestate/RealEstateApp'
 import AgentChat from './components/AgentChat'
 import AuthScreen from './components/AuthScreen'
 import NewsNotificationBell from './components/NewsNotificationBell'
@@ -15,7 +14,7 @@ import NewsToasts from './components/NewsToasts'
 import { useNewsNotifications } from './hooks/useNewsNotifications'
 import { WatchlistProvider } from './context/WatchlistContext'
 import { useAuth } from './context/AuthContext'
-import { Activity, Plus, X, Search, Home } from 'lucide-react'
+import { Activity, Plus, X, Search } from 'lucide-react'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -288,36 +287,6 @@ function Workspace({ onSwitch }: { onSwitch: (mode: AppMode) => void }) {
 
         <div style={{ width: 1, height: 16, background: 'var(--border)' }} />
 
-        {/* Mode switcher */}
-        <div style={{ display: 'flex', background: 'var(--bg)', borderRadius: 4, padding: 2, gap: 2, border: '1px solid var(--border)' }}>
-          <button
-            style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              background: 'rgba(0,212,170,0.15)', border: '1px solid rgba(0,212,170,0.35)',
-              color: 'var(--green)', borderRadius: 3, padding: '3px 10px',
-              fontSize: 10, fontFamily: 'inherit', fontWeight: 600, letterSpacing: '0.06em', cursor: 'default',
-            }}
-          >
-            <Activity size={9} /> STOCKS
-          </button>
-          <button
-            onClick={() => onSwitch('realestate')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              background: 'none', border: '1px solid transparent',
-              color: 'var(--text-dim)', borderRadius: 3, padding: '3px 10px',
-              fontSize: 10, fontFamily: 'inherit', fontWeight: 600, letterSpacing: '0.06em', cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = 'var(--blue)'; e.currentTarget.style.borderColor = 'rgba(77,166,255,0.3)' }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.borderColor = 'transparent' }}
-          >
-            <Home size={9} /> REAL ESTATE
-          </button>
-        </div>
-
-        <div style={{ width: 1, height: 16, background: 'var(--border)' }} />
-
         <button
           onClick={addPanel}
           style={{
@@ -399,7 +368,7 @@ function Workspace({ onSwitch }: { onSwitch: (mode: AppMode) => void }) {
   )
 }
 
-type AppMode = 'landing' | 'stocks' | 'realestate'
+type AppMode = 'landing' | 'stocks'
 
 export default function App() {
   const [mode, setMode] = useState<AppMode>('landing')
@@ -421,9 +390,7 @@ export default function App() {
           {mode === 'stocks' && (
             <Workspace onSwitch={setMode} />
           )}
-          {mode === 'realestate' && (
-            <RealEstateApp onSwitch={setMode} />
-          )}
+
         </WatchlistProvider>
       )}
     </QueryClientProvider>
