@@ -5,9 +5,11 @@ import os
 
 load_dotenv()
 
-from routers import quotes, candles, options, news, pnl, realestate
+from db import init_db
+from routers import quotes, candles, options, news, pnl, realestate, agent, auth, watchlist
 
 app = FastAPI(title="AaronTerminal API", version="1.0.0")
+init_db()
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,6 +24,9 @@ app.include_router(options.router)
 app.include_router(news.router)
 app.include_router(pnl.router)
 app.include_router(realestate.router)
+app.include_router(agent.router)
+app.include_router(auth.router)
+app.include_router(watchlist.router)
 
 
 @app.get("/")

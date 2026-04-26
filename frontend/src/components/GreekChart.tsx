@@ -110,8 +110,8 @@ export default function GreekChart({ ticker, expiration, strike, optType }: Prop
                 contentStyle={{ background: '#161a23', border: '1px solid #1e2533', borderRadius: 4, fontSize: 11 }}
                 labelStyle={{ color: '#5a6a8a' }}
                 itemStyle={{ color }}
-                formatter={(v: number) => [
-                  greek === 'iv' ? `${(v * 100).toFixed(1)}%` : v.toFixed(4),
+                formatter={(v: any) => [
+                  greek === 'iv' ? `${(Number(v) * 100).toFixed(1)}%` : Number(v).toFixed(4),
                   label,
                 ]}
               />

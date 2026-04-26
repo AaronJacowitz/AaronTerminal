@@ -9,3 +9,7 @@ pandas
 python-dotenv
 httpx
 aiohttp
+openai
+PyJWT
+email-validator
+psycopg2-binary

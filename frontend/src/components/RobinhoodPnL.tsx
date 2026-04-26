@@ -218,7 +218,7 @@ export default function RobinhoodPnL({ ticker, spot, contract, optType, expirati
               <Tooltip
                 contentStyle={{ background: '#161a23', border: '1px solid #1e2533', borderRadius: 4, fontSize: 10 }}
                 labelFormatter={v => `${ticker} @ $${Number(v).toFixed(2)}`}
-                formatter={(v: number) => [`${v >= 0 ? '+' : ''}$${v.toFixed(2)}`, 'P&L']}
+                formatter={(v: any) => [`${Number(v) >= 0 ? '+' : ''}$${Number(v).toFixed(2)}`, 'P&L']}
               />
             </ComposedChart>
           </ResponsiveContainer>

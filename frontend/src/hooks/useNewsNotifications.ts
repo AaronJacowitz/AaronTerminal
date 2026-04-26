@@ -39,7 +39,6 @@ export function useNewsNotifications() {
 
     async function poll() {
       const uninited = tickers.filter(t => !initedTickersRef.current.has(t))
-      const inited   = tickers.filter(t => initedTickersRef.current.has(t))
 
       const allTickers = tickers
       const results = await Promise.allSettled(

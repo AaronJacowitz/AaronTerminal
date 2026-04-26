@@ -150,7 +150,6 @@ export default function PnLCalculator({ ticker, spot, contract, optType, expirat
                 allowDuplicatedCategory={false}
                 tick={{ fill: '#5a6a8a', fontSize: 9 }} tickLine={false}
                 tickFormatter={v => `$${v.toFixed(0)}`}
-                data={data.expiry_curve}
               />
               <YAxis
                 tick={{ fill: '#5a6a8a', fontSize: 9 }} tickLine={false} axisLine={false}
@@ -159,7 +158,7 @@ export default function PnLCalculator({ ticker, spot, contract, optType, expirat
               <Tooltip
                 contentStyle={{ background: '#161a23', border: '1px solid #1e2533', borderRadius: 4, fontSize: 11 }}
                 labelFormatter={v => `Underlying: $${Number(v).toFixed(2)}`}
-                formatter={(v: number, name: string) => [`${v >= 0 ? '+' : ''}$${v.toFixed(2)}`, name]}
+                formatter={(v: any, name: any) => [`${Number(v) >= 0 ? '+' : ''}$${Number(v).toFixed(2)}`, String(name)]}
               />
               <ReferenceLine y={0} stroke="#2a3346" strokeWidth={1} />
               <ReferenceLine x={spot} stroke="#ffb347" strokeDasharray="4 2"

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { fetchStockInfo, fetchQuote } from '../api/client'
+import { fetchStockInfo } from '../api/client'
 import { useWatchlist } from '../context/WatchlistContext'
 import { Plus, X, Check } from 'lucide-react'
 
@@ -24,12 +24,6 @@ export default function StockMetrics({ ticker }: Props) {
     queryKey: ['info', ticker],
     queryFn: () => fetchStockInfo(ticker),
     staleTime: 5 * 60_000,
-  })
-
-  const { data: quote } = useQuery({
-    queryKey: ['quote', ticker],
-    queryFn: () => fetchQuote(ticker),
-    staleTime: 10_000,
   })
 
   const { addItem } = useWatchlist()
@@ -62,7 +56,7 @@ export default function StockMetrics({ ticker }: Props) {
       borderTop: '1px solid var(--border)', background: 'var(--bg3)',
       padding: '6px 10px', flexShrink: 0, position: 'relative',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap', overflowX: 'auto' }}>
         {METRICS.map(({ label, value }) => (
           <div key={label} style={{ display: 'flex', gap: 4, fontSize: 10, whiteSpace: 'nowrap' }}>
             <span style={{ color: 'var(--text-dim)' }}>{label}</span>

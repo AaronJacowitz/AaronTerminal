@@ -91,3 +91,44 @@ input  { font-family: inherit; }
   from { opacity: 0; transform: translateX(20px); }
   to   { opacity: 1; transform: translateX(0); }
 }
+
+/* Resizable panel handles */
+.resize-handle {
+  background: var(--border);
+  transition: background 0.15s;
+  flex-shrink: 0;
+  position: relative;
+}
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+.resize-handle-h {
+  width: 4px;
+  cursor: col-resize;
+}
+.resize-handle-h::after {
+  left: -4px;
+  right: -4px;
+}
+.resize-handle-v {
+  height: 4px;
+  cursor: row-resize;
+}
+.resize-handle-v::after {
+  top: -4px;
+  bottom: -4px;
+}
+.resize-handle:hover,
+.resize-handle[data-resize-handle-active] {
+  background: var(--green);
+}
+
+/* Override resize handle styles for v4 API */
+.resize-handle { background: var(--border2); border-radius: 2px; }
+.resize-handle-h { margin: 0 1px; }
+.resize-handle-h::after { left: -6px; right: -6px; }
+.resize-handle-v { margin: 1px 0; }
+.resize-handle-v::after { top: -6px; bottom: -6px; }
+.resize-handle[data-separator="active"] { background: var(--green); }

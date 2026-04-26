@@ -4,6 +4,7 @@ import { fetchListings, fetchRentEstimate } from '../../api/client'
 import PropertyCard from './PropertyCard'
 import { Search, Home, Activity, SlidersHorizontal, X, ArrowUp, ArrowDown } from 'lucide-react'
 import { searchCities, normalizeQuery, type CityOption } from './cities'
+import { useAuth } from '../../context/AuthContext'
 
 const PROPERTY_TYPES = ['Any', 'Single Family', 'Condo', 'Townhouse', 'Multi Family']
 const BEDS  = ['Any', '1', '2', '3', '4', '5+']
@@ -37,6 +38,7 @@ interface SearchParams {
 }
 
 export default function RealEstateApp({ onSwitch }: { onSwitch: (mode: 'landing' | 'stocks' | 'realestate') => void }) {
+  const { state: authState, signOut } = useAuth()
   const [params, setParams]       = useState<SearchParams>({ query: '', propertyType: 'Any', bedrooms: 'Any', bathrooms: 'Any' })
   const [submitted, setSubmitted] = useState<SearchParams | null>(null)
   const [showFilters, setShowFilters] = useState(false)
@@ -105,7 +107,7 @@ export default function RealEstateApp({ onSwitch }: { onSwitch: (mode: 'landing'
   })
 
   const rentLoading = needsRent && rentQueries.some(q => q.isLoading)
-  const rentLoaded  = needsRent && rentQueries.every(q => !q.isLoading)
+  // const rentLoaded  = needsRent && rentQueries.every(q => !q.isLoading)
 
   // Sort listings
   const sorted = [...listings].sort((a, b) => {
@@ -309,8 +311,34 @@ export default function RealEstateApp({ onSwitch }: { onSwitch: (mode: 'landing'
         </div>
 
         {submitted && data && (
-          <div style={{ marginLeft: 'auto', fontSize: 9, color: 'var(--text-mute)' }}>
-            {data.count} RESULT{data.count !== 1 ? 'S' : ''} · RENTCAST
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10, fontSize: 9, color: 'var(--text-mute)' }}>
+            {authState.status === 'signed_in' && (
+              <>
+                <span style={{ color: 'var(--text-dim)' }}>SIGNED IN AS</span>
+                <span style={{ color: 'var(--text)', fontWeight: 700, letterSpacing: '0.06em' }}>
+                  {authState.user.username.toUpperCase()}
+                </span>
+                <button
+                  onClick={() => signOut()}
+                  style={{
+                    background: 'none',
+                    border: '1px solid var(--border2)',
+                    color: 'var(--text-dim)',
+                    borderRadius: 4,
+                    padding: '2px 8px',
+                    fontSize: 9,
+                    fontFamily: 'inherit',
+                    cursor: 'pointer',
+                  }}
+                >
+                  SIGN OUT
+                </button>
+                <span style={{ width: 1, height: 14, background: 'var(--border)' }} />
+              </>
+            )}
+            <span>
+              {data.count} RESULT{data.count !== 1 ? 'S' : ''} · RENTCAST
+            </span>
           </div>
         )}
       </div>

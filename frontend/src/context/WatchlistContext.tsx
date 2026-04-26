@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { addWatchlistItem, deleteWatchlistItem, fetchWatchlist, patchWatchlistItem, type WatchlistItem as ApiWatchlistItem } from '../api/client'
 
 export interface WatchlistItem {
   id: string
@@ -22,28 +23,46 @@ interface WatchlistCtx {
 
 const WatchlistContext = createContext<WatchlistCtx | null>(null)
 
-const KEY = 'aaron-terminal-watchlist'
-
 export function WatchlistProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<WatchlistItem[]>(() => {
-    try { return JSON.parse(localStorage.getItem(KEY) || '[]') }
-    catch { return [] }
-  })
+  const [items, setItems] = useState<WatchlistItem[]>([])
 
   useEffect(() => {
-    localStorage.setItem(KEY, JSON.stringify(items))
-  }, [items])
+    let alive = true
+    fetchWatchlist()
+      .then((rows: ApiWatchlistItem[]) => { if (alive) setItems(rows as any) })
+      .catch(() => { if (alive) setItems([]) })
+    return () => { alive = false }
+  }, [])
 
   const addItem = (item: Omit<WatchlistItem, 'id'>) => {
-    setItems(prev => [...prev, { ...item, id: `${Date.now()}-${Math.random()}` }])
+    // optimistic insert then replace id with server id
+    const tmpId = `tmp-${Date.now()}-${Math.random()}`
+    setItems(prev => [...prev, { ...item, id: tmpId }])
+    addWatchlistItem(item as any)
+      .then(saved => {
+        setItems(prev => prev.map(i => i.id === tmpId ? (saved as any) : i))
+      })
+      .catch(() => {
+        setItems(prev => prev.filter(i => i.id !== tmpId))
+      })
   }
 
   const removeItem = (id: string) => {
+    const prevItems = items
     setItems(prev => prev.filter(i => i.id !== id))
+    if (id.startsWith('tmp-')) return
+    deleteWatchlistItem(id).catch(() => {
+      setItems(prevItems)
+    })
   }
 
   const updateItem = (id: string, patch: Partial<WatchlistItem>) => {
+    const prevItems = items
     setItems(prev => prev.map(i => i.id === id ? { ...i, ...patch } : i))
+    if (id.startsWith('tmp-')) return
+    patchWatchlistItem(id, patch as any)
+      .then(saved => setItems(prev => prev.map(i => i.id === id ? (saved as any) : i)))
+      .catch(() => setItems(prevItems))
   }
 
   return (

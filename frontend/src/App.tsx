@@ -1,16 +1,20 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
+import { Group as PanelGroup, Panel as ResizablePanel, Separator as PanelResizeHandle } from 'react-resizable-panels'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { fetchQuote } from './api/client'
-import CandleChart from './components/CandleChart'
+import CandleChart, { type PeriodChange } from './components/CandleChart'
 import OptionsView from './components/OptionsView'
 import NewsPanel from './components/NewsPanel'
 import Watchlist from './components/Watchlist'
 import LandingPage from './components/LandingPage'
 import RealEstateApp from './components/realestate/RealEstateApp'
+import AgentChat from './components/AgentChat'
+import AuthScreen from './components/AuthScreen'
 import NewsNotificationBell from './components/NewsNotificationBell'
 import NewsToasts from './components/NewsToasts'
 import { useNewsNotifications } from './hooks/useNewsNotifications'
 import { WatchlistProvider } from './context/WatchlistContext'
+import { useAuth } from './context/AuthContext'
 import { Activity, Plus, X, Search, Home } from 'lucide-react'
 import './index.css'
 
@@ -18,7 +22,7 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
 })
 
-type View = 'chart' | 'options' | 'news' | 'watchlist'
+type View = 'chart' | 'options' | 'news' | 'watchlist' | 'agent'
 
 interface PanelState {
   id: string
@@ -38,6 +42,7 @@ const NAV: { id: View; label: string }[] = [
   { id: 'options',   label: 'OPTIONS' },
   { id: 'news',      label: 'NEWS' },
   { id: 'watchlist', label: 'WATCHLIST' },
+  { id: 'agent',     label: 'AGENT' },
 ]
 
 // --- Panel ---
@@ -51,6 +56,10 @@ function Panel({
   onChange: (update: Partial<PanelState>) => void
 }) {
   const [tickerInput, setTickerInput] = useState(panel.ticker)
+  const [periodChange, setPeriodChange] = useState<import('./components/CandleChart').PeriodChange | null>(null)
+
+  // Reset period change when ticker changes
+  useEffect(() => { setPeriodChange(null) }, [panel.ticker])
 
   const submitTicker = () => {
     const t = tickerInput.trim().toUpperCase()
@@ -64,7 +73,12 @@ function Panel({
     staleTime: 10_000,
   })
 
-  const up = quote ? quote.change >= 0 : null
+  // When viewing chart tab and period data is ready, show period change;
+  // otherwise fall back to daily change from the quote API.
+  const showPeriod = panel.view === 'chart' && periodChange != null
+  const displayChangePct = showPeriod ? periodChange!.pct : (quote?.change_pct ?? null)
+  const displayChange    = showPeriod ? periodChange!.change : (quote?.change ?? null)
+  const up = displayChange != null ? displayChange >= 0 : null
   const spot = quote?.price ?? 0
 
   return (
@@ -78,6 +92,7 @@ function Panel({
         display: 'flex', alignItems: 'center', gap: 6,
         padding: '4px 8px', background: 'var(--bg3)',
         borderBottom: '1px solid var(--border)', flexShrink: 0, minWidth: 0,
+        position: 'relative',
       }}>
         {/* Ticker search */}
         <div style={{
@@ -98,25 +113,32 @@ function Panel({
           />
         </div>
 
-        {/* Live price */}
+        {/* Live price + period/daily change */}
         {quote && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
             <span style={{ fontWeight: 700, fontSize: 12, color: up ? 'var(--green)' : 'var(--red)' }}>
               ${quote.price?.toFixed(2)}
             </span>
-            <span style={{ fontSize: 10, color: up ? 'var(--green)' : 'var(--red)' }}>
-              {up ? '+' : ''}{quote.change_pct?.toFixed(2)}%
-            </span>
+            {displayChangePct != null && (
+              <span style={{ fontSize: 10, color: up ? 'var(--green)' : 'var(--red)' }}>
+                {up ? '+' : ''}{displayChangePct.toFixed(2)}%
+                {showPeriod && (
+                  <span style={{ color: 'var(--text-mute)', marginLeft: 2 }}>
+                    ({periodChange!.interval})
+                  </span>
+                )}
+              </span>
+            )}
           </div>
         )}
 
-        {/* Two tabs */}
-        <div style={{ display: 'flex', gap: 2, marginLeft: 6 }}>
+        {/* Nav tabs — leave room on the right for the close button */}
+        <div style={{ display: 'flex', gap: 2, marginLeft: 6, marginRight: canClose ? 20 : 0, overflow: 'hidden' }}>
           {NAV.map(n => (
             <button
               key={n.id}
               className={`tab-btn ${panel.view === n.id ? 'active' : ''}`}
-              style={{ padding: '3px 10px', fontSize: 10 }}
+              style={{ padding: '3px 10px', fontSize: 10, flexShrink: 0 }}
               onClick={() => onChange({ view: n.id })}
             >
               {n.label}
@@ -124,17 +146,17 @@ function Panel({
           ))}
         </div>
 
-        {/* Close */}
+        {/* Close — absolute so it's always visible */}
         {canClose && (
           <button
             onClick={onClose}
             style={{
-              marginLeft: 'auto', background: 'none', border: 'none',
-              color: 'var(--text-mute)', padding: 2, display: 'flex',
-              alignItems: 'center', flexShrink: 0, cursor: 'pointer',
+              position: 'absolute', top: '50%', right: 4,
+              transform: 'translateY(-50%)',
+              background: 'var(--bg3)', border: 'none',
+              color: 'var(--red)', padding: 2, display: 'flex',
+              alignItems: 'center', cursor: 'pointer', zIndex: 10,
             }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--red)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-mute)')}
           >
             <X size={12} />
           </button>
@@ -143,10 +165,11 @@ function Panel({
 
       {/* Panel content */}
       <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        {panel.view === 'chart'     && <CandleChart ticker={panel.ticker} />}
+        {panel.view === 'chart'     && <CandleChart ticker={panel.ticker} onPeriodChange={setPeriodChange} />}
         {panel.view === 'options'   && <OptionsView ticker={panel.ticker} spot={spot} />}
         {panel.view === 'news'      && <NewsPanel ticker={panel.ticker} />}
         {panel.view === 'watchlist' && <Watchlist />}
+        {panel.view === 'agent'     && <AgentChat ticker={panel.ticker} />}
       </div>
     </div>
   )
@@ -157,6 +180,7 @@ function Panel({
 function Workspace({ onSwitch }: { onSwitch: (mode: AppMode) => void }) {
   const [panels, setPanels] = useState<PanelState[]>([makePanel('SPY', 'chart')])
   const { notifications, toasts, unread, dismissToast, markAllRead, clearAll } = useNewsNotifications()
+  const { state: authState, signOut } = useAuth()
 
   const addPanel = () => {
     setPanels(prev => [...prev, makePanel('SPY', 'chart')])
@@ -170,10 +194,64 @@ function Workspace({ onSwitch }: { onSwitch: (mode: AppMode) => void }) {
     setPanels(prev => prev.map(p => p.id === id ? { ...p, ...update } : p))
   }, [])
 
-  // Grid layout: up to 3 columns, rows fill remaining height
   const count = panels.length
-  const cols = count === 1 ? 1 : count === 2 ? 2 : 3
-  const rows = Math.ceil(count / cols)
+
+  // Split into 1 or 2 rows depending on panel count
+  const splitIdx = count > 3 ? Math.ceil(count / 2) : count
+  const row1 = panels.slice(0, splitIdx)
+  const row2 = panels.slice(splitIdx)
+  const twoRows = row2.length > 0
+
+  // Vertical split state (percentage for top row)
+  const [topPct, setTopPct] = useState(50)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const onVerticalDragStart = (e: React.MouseEvent) => {
+    e.preventDefault()
+    const container = containerRef.current
+    if (!container) return
+    const startY = e.clientY
+    const startPct = topPct
+    const h = container.getBoundingClientRect().height
+    const onMove = (ev: MouseEvent) => {
+      const delta = ((ev.clientY - startY) / h) * 100
+      setTopPct(() => Math.min(85, Math.max(15, startPct + delta)))
+    }
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
+
+  const renderRow = (rowPanels: PanelState[]) => {
+    const children: React.ReactNode[] = []
+    rowPanels.forEach((panel, idx) => {
+      if (idx > 0) {
+        children.push(
+          <PanelResizeHandle key={`h-${panel.id}`} className="resize-handle resize-handle-h" />
+        )
+      }
+      children.push(
+        <ResizablePanel key={panel.id} defaultSize={100 / rowPanels.length} minSize={12}>
+          <div style={{ height: '100%', padding: '0 2px', boxSizing: 'border-box' }}>
+            <Panel
+              panel={panel}
+              canClose={panels.length > 1}
+              onClose={() => removePanel(panel.id)}
+              onChange={update => updatePanel(panel.id, update)}
+            />
+          </div>
+        </ResizablePanel>
+      )
+    })
+    return (
+      <PanelGroup orientation="horizontal" style={{ height: '100%', overflow: 'hidden' }}>
+        {children}
+      </PanelGroup>
+    )
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
@@ -251,28 +329,58 @@ function Workspace({ onSwitch }: { onSwitch: (mode: AppMode) => void }) {
           onClear={clearAll}
         />
 
-        <span style={{ marginLeft: 'auto', fontSize: 9, color: 'var(--text-mute)' }}>
-          {count} PANEL{count !== 1 ? 'S' : ''} · 15-MIN DELAYED · YFINANCE + POLYGON
+        <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10, fontSize: 9, color: 'var(--text-mute)' }}>
+          {authState.status === 'signed_in' && (
+            <>
+              <span style={{ color: 'var(--text-dim)' }}>SIGNED IN AS</span>
+              <span style={{ color: 'var(--text)', fontWeight: 700, letterSpacing: '0.06em' }}>
+                {authState.user.username.toUpperCase()}
+              </span>
+              <button
+                onClick={() => signOut()}
+                style={{
+                  background: 'none',
+                  border: '1px solid var(--border2)',
+                  color: 'var(--text-dim)',
+                  borderRadius: 4,
+                  padding: '2px 8px',
+                  fontSize: 9,
+                  fontFamily: 'inherit',
+                  cursor: 'pointer',
+                }}
+              >
+                SIGN OUT
+              </button>
+              <span style={{ width: 1, height: 14, background: 'var(--border)' }} />
+            </>
+          )}
+          <span>
+            {count} PANEL{count !== 1 ? 'S' : ''} · 15-MIN DELAYED · YFINANCE + POLYGON
+          </span>
         </span>
       </div>
 
-      {/* Panel grid */}
-      <div style={{
-        flex: 1, minHeight: 0,
-        display: 'grid',
-        gridTemplateColumns: `repeat(${cols}, 1fr)`,
-        gridTemplateRows: `repeat(${rows}, 1fr)`,
-        gap: 4, padding: 4,
-      }}>
-        {panels.map(panel => (
-          <Panel
-            key={panel.id}
-            panel={panel}
-            canClose={panels.length > 1}
-            onClose={() => removePanel(panel.id)}
-            onChange={update => updatePanel(panel.id, update)}
-          />
-        ))}
+      {/* Resizable panel area */}
+      <div ref={containerRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '4px 2px', boxSizing: 'border-box' }}>
+        {twoRows ? (
+          <>
+            <div style={{ height: `${topPct}%`, minHeight: '15%', boxSizing: 'border-box' }}>
+              {renderRow(row1)}
+            </div>
+            <div
+              className="resize-handle resize-handle-v"
+              onMouseDown={onVerticalDragStart}
+              style={{ flexShrink: 0, zIndex: 10 }}
+            />
+            <div style={{ flex: 1, minHeight: '15%', boxSizing: 'border-box' }}>
+              {renderRow(row2)}
+            </div>
+          </>
+        ) : (
+          <div style={{ flex: 1, minHeight: 0 }}>
+            {renderRow(row1)}
+          </div>
+        )}
       </div>
 
       <NewsToasts toasts={toasts} onDismiss={dismissToast} />
@@ -284,20 +392,29 @@ type AppMode = 'landing' | 'stocks' | 'realestate'
 
 export default function App() {
   const [mode, setMode] = useState<AppMode>('landing')
+  const { state: authState } = useAuth()
 
   return (
     <QueryClientProvider client={queryClient}>
-      <WatchlistProvider>
-        {mode === 'landing' && (
-          <LandingPage onSelect={m => setMode(m)} />
-        )}
-        {mode === 'stocks' && (
-          <Workspace onSwitch={setMode} />
-        )}
-        {mode === 'realestate' && (
-          <RealEstateApp onSwitch={setMode} />
-        )}
-      </WatchlistProvider>
+      {authState.status === 'loading' ? (
+        <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--text-dim)', fontSize: 11, letterSpacing: '0.1em' }}>
+          LOADING…
+        </div>
+      ) : authState.status === 'signed_out' ? (
+        <AuthScreen />
+      ) : (
+        <WatchlistProvider>
+          {mode === 'landing' && (
+            <LandingPage onSelect={m => setMode(m)} />
+          )}
+          {mode === 'stocks' && (
+            <Workspace onSwitch={setMode} />
+          )}
+          {mode === 'realestate' && (
+            <RealEstateApp onSwitch={setMode} />
+          )}
+        </WatchlistProvider>
+      )}
     </QueryClientProvider>
   )
 }
