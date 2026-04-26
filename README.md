@@ -17,7 +17,7 @@ A personal web-based trading and real estate investment terminal with real-time 
 - **News** — Ticker-specific headlines from Yahoo Finance, WSJ, Bloomberg, and CNBC — sorted by most recent
 - **News Alerts** — Bell icon in the top bar polls all watchlist tickers every 5 minutes and notifies you of new headlines with toast pop-ups
 - **Watchlist** — Track stocks and options with live daily return (P&L vs. prior close), refreshed every 15s
-- **AI Agent** — Claude-powered chat panel with full market context (quotes, candles, options chain, news)
+- **AI Agent** — Llama 3.3 70B (via Groq, free tier) chat panel embedded in every panel. Answers financial education questions, explains terminal features, and can issue clickable navigation commands that jump you directly to a view/ticker. Falls back to OpenAI if configured, or a built-in rule-based mode with no key at all.
 - **Multi-panel layout** — Add and resize multiple panels side by side; charts fill their panels correctly on every layout change
 
 ### Real Estate Terminal
@@ -42,7 +42,7 @@ A personal web-based trading and real estate investment terminal with real-time 
 | Data — Stocks | yfinance (15-min delayed) + Polygon.io (optional real-time) |
 | Data — News | Yahoo Finance RSS, WSJ RSS, Bloomberg RSS, CNBC RSS |
 | Data — Real Estate | Rentcast API (listings + rent estimates) · **mock mode active by default** |
-| AI Agent | OpenAI API (configurable model via `OPENAI_MODEL`) |
+| AI Agent | Groq API — free tier, Llama 3.3 70B (falls back to OpenAI if `GROQ_API_KEY` not set) |
 
 ## Getting Started
 
@@ -105,7 +105,9 @@ Copy `backend/.env.example` to `backend/.env` and fill in your values:
 | `RENTCAST_MOCK` | Optional | Set to `true` to use hardcoded sample listings instead of live API calls. **Defaults to `true`** in the included `.env` to protect the 50 req/month free quota. Set to `false` (with a valid `RENTCAST_API_KEY`) to enable live data. |
 | `JWT_SECRET` | Recommended | Secret key used to sign auth tokens. Change from the default before deploying. |
 | `DATABASE_URL` | Required | PostgreSQL connection string. Default: `postgresql://postgres:postgres@localhost:5432/aaronterminal` |
-| `OPENAI_API_KEY` | Optional | Enables the AI Agent chat panel. |
+| `GROQ_API_KEY` | Optional (recommended) | **Free** Groq API key from [console.groq.com](https://console.groq.com) — no credit card required. Powers the AI Agent with Llama 3.3 70B. Takes priority over OpenAI if both are set. |
+| `GROQ_MODEL` | Optional | Override the Groq model. Default: `llama-3.3-70b-versatile` |
+| `OPENAI_API_KEY` | Optional | Fallback if `GROQ_API_KEY` is not set. |
 
 ## Project Structure
 

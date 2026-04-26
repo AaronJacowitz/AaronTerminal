@@ -169,7 +169,18 @@ function Panel({
         {panel.view === 'options'   && <OptionsView ticker={panel.ticker} spot={spot} />}
         {panel.view === 'news'      && <NewsPanel ticker={panel.ticker} />}
         {panel.view === 'watchlist' && <Watchlist />}
-        {panel.view === 'agent'     && <AgentChat ticker={panel.ticker} />}
+        {panel.view === 'agent'     && (
+          <AgentChat
+            ticker={panel.ticker}
+            onNavigate={cmd => {
+              const update: Partial<PanelState> = {}
+              if (cmd.view && (['chart','options','news','watchlist'] as string[]).includes(cmd.view))
+                update.view = cmd.view as View
+              if (cmd.ticker) update.ticker = cmd.ticker
+              if (Object.keys(update).length) onChange(update)
+            }}
+          />
+        )}
       </div>
     </div>
   )
